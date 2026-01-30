@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tomato Leaf Disease Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        input[type="file"] {
+            margin: 15px 0;
+        }
+
+        .preview {
+            margin-top: 10px;
+        }
+
+        .preview img {
+            width: 224px;
+            height: 224px;
+            object-fit: cover;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #27ae60;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #219150;
+        }
+
+        .result {
+            margin-top: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .confidence {
+            margin-top: 5px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Tomato Leaf Disease Detection</h2>
+
+    <form action="/predict" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required onchange="previewImage(event)">
+        
+        <div class="preview">
+            <img id="imagePreview" src="" alt="Image Preview">
+        </div>
+
+        <button type="submit">Predict Disease</button>
+    </form>
+
+    {% if result %}
+        <div class="result">{{ result }}</div>
+    {% endif %}
+
+    {% if confidence %}
+        <div class="confidence">{{ confidence }}</div>
+    {% endif %}
+</div>
+
+<script>
+    function previewImage(event) {
+        const imagePreview = document.getElementById("imagePreview");
+        imagePreview.src = URL.createObjectURL(event.target.files[0]);
+        imagePreview.style.display = "block";
+    }
+</script>
+
+</body>
+</html>

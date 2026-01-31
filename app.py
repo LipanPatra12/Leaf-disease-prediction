@@ -1,7 +1,12 @@
 import numpy as np
 from flask import Flask, request, render_template
 from PIL import Image
-import tflite_runtime.interpreter as tflite
+try:
+    import tflite_runtime.interpreter as tflite
+except ImportError:
+    import tensorflow as tf
+    tflite = tf.lite
+
 
 # ----------------------------
 # Flask App Initialization

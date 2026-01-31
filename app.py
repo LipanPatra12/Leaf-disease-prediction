@@ -1,67 +1,89 @@
-import os
 import numpy as np
 from flask import Flask, request, render_template
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
+from PIL import Image
+import tflite_runtime.interpreter as tflite
 
-# Initialize Flask app
+# ----------------------------
+# Flask App Initialization
+# ----------------------------
 app = Flask(__name__)
 
-# Load trained CNN model (load once)
-MODEL_PATH = "cnn_model.h5"
-model = load_model(MODEL_PATH)
+# ----------------------------
+# Load TFLite Model (ONCE)
+# ----------------------------
+MODEL_PATH = "tomato_leaf_model.tflite"
 
-# Class labels (MUST match training order)
+interpreter = tflite.Interpreter(model_path=MODEL_PATH)
+interpreter.allocate_tensors()
+
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
+# ----------------------------
+# Class Labels
+# (MUST match training order)
+# ----------------------------
 CLASS_NAMES = [
-    'Bacterial_spot',
-    'Early_blight',
-    'Late_blight',
-    'Leaf_Mold',
-    'Septoria_leaf_spot',
-    'Spider_mites',
-    'Target_Spot',
-    'Tomato_Yellow_Leaf_Curl_Virus',
-    'Tomato_mosaic_virus',
-    'Healthy'
+    "Bacterial_spot",
+    "Early_blight",
+    "Late_blight",
+    "Leaf_Mold",
+    "Septoria_leaf_spot",
+    "Spider_mites",
+    "Target_Spot",
+    "Tomato_Yellow_Leaf_Curl_Virus",
+    "Tomato_mosaic_virus",
+    "Healthy"
 ]
 
-# Home route
-@app.route('/')
+# ----------------------------
+# Routes
+# ----------------------------
+@app.route("/")
 def home():
-    return render_template('home.html')
+    return render_template("index.html")
 
-# Prediction route
-@app.route('/predict', methods=['POST'])
+@app.route("/predict", methods=["POST"])
 def predict():
-    if 'file' not in request.files:
-        return render_template('index.html', result="No file uploaded")
+    if "file" not in request.files:
+        return render_template("index.html", result="No image uploaded")
 
-    file = request.files['file']
+    file = request.files["file"]
 
-    if file.filename == '':
-        return render_template('index.html', result="No file selected")
+    if file.filename == "":
+        return render_template("index.html", result="No image selected")
 
-    # Save image temporarily
-    img_path = os.path.join("static", file.filename)
-    file.save(img_path)
+    # ----------------------------
+    # Image Preprocessing
+    # ----------------------------
+    img = Image.open(file).convert("RGB")
+    img = img.resize((224, 224))
 
-    # Load and preprocess image
-    img = image.load_img(img_path, target_size=(224, 224))
-    img_array = image.img_to_array(img)
+    img_array = np.array(img, dtype=np.float32)
     img_array = img_array / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    # Prediction
-    predictions = model.predict(img_array)
-    predicted_class = CLASS_NAMES[np.argmax(predictions)]
-    confidence = np.max(predictions) * 100
+    # ----------------------------
+    # Model Prediction
+    # ----------------------------
+    interpreter.set_tensor(input_details[0]["index"], img_array)
+    interpreter.invoke()
+
+    predictions = interpreter.get_tensor(output_details[0]["index"])
+
+    predicted_index = int(np.argmax(predictions))
+    predicted_class = CLASS_NAMES[predicted_index]
+    confidence = float(np.max(predictions)) * 100
 
     return render_template(
-        'index.html',
+        "index.html",
         result=f"Disease: {predicted_class}",
         confidence=f"Confidence: {confidence:.2f}%"
     )
 
-# Run app
+# ----------------------------
+# Run App
+# ----------------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
